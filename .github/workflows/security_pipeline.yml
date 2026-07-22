@@ -67,7 +67,7 @@ jobs:
             --output trivy-sca-ci.json \
             . || true
 
-            - name: Upload Trivy SCA report
+      - name: Upload Trivy SCA report
         uses: actions/upload-artifact@v4
         with:
           name: trivy-sca-report
