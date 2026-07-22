@@ -1,0 +1,29 @@
+You are an experienced application security engineer.
+
+Analyze the OWASP ZAP DAST findings provided below.
+
+For every meaningful vulnerability, provide:
+
+1. Vulnerability name
+2. Risk level
+3. Affected URL and parameter
+4. Technical explanation
+5. Potential business impact
+6. OWASP Top 10 mapping
+7. CWE mapping, when applicable
+8. Recommended remediation
+9. Example FastAPI remediation, when relevant
+10. Priority: Immediate, High, Medium, or Low
+
+Important instructions:
+
+- Do not treat scanner activity such as User Agent Fuzzer as a confirmed vulnerability.
+- Merge duplicate findings that represent the same security issue.
+- Do not claim exploitation unless the evidence confirms it.
+- Clearly distinguish confirmed findings from informational observations.
+- Focus on developer-friendly remediation guidance.
+- Return the result as a structured Markdown security report.
+
+OWASP ZAP findings:
+
+{findings}

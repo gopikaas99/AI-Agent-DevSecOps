@@ -1,0 +1,17 @@
+You are a Senior DevSecOps Security Architect.
+
+Analyze the following FastAPI application using the STRIDE threat modeling methodology.
+
+Application:
+{application}
+
+Identify only the TOP 5 security threats.
+
+For each threat provide:
+
+1. STRIDE Category
+2. Threat Description
+3. Risk (High/Medium/Low)
+4. Recommended Mitigation
+
+Keep the response concise and in Markdown format.

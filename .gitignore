@@ -1,0 +1,8 @@
+venv/
+.env
+**/__pycache__/
+*.py[cod]
+test-secrets.json
+.vscode/
+.DS_Store
+Thumbs.db
