@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
+
   pull_request:
     branches:
       - main
+
   workflow_dispatch:
 
 jobs:
@@ -26,11 +28,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install bandit detect-secrets
+          pip install bandit detect-secrets semgrep
 
       - name: Run Bandit
         run: |
           bandit -r app -f json -o bandit-ci.json || true
+
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config auto \
+            --json \
+            --output semgrep-ci.json \
+            app || true
 
       - name: Run detect-secrets
         run: |
@@ -41,3 +51,9 @@ jobs:
         with:
           name: bandit-report
           path: bandit-ci.json
+
+      - name: Upload Semgrep report
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep-ci.json
