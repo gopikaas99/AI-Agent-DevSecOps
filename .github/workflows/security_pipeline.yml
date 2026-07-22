@@ -1,0 +1,43 @@
+name: AI DevSecOps Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  security-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install bandit detect-secrets
+
+      - name: Run Bandit
+        run: |
+          bandit -r app -f json -o bandit-ci.json || true
+
+      - name: Run detect-secrets
+        run: |
+          detect-secrets scan --baseline .secrets.baseline
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-ci.json
