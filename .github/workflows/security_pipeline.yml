@@ -13,9 +13,14 @@ on:
 
 jobs:
   security-checks:
+    name: Security Checks
     runs-on: ubuntu-latest
 
     steps:
+      # -------------------------------------------------------
+      # 1. Checkout and environment setup
+      # -------------------------------------------------------
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -23,39 +28,69 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
-      - name: Install dependencies
+      - name: Create scan report directory
+        run: |
+          mkdir -p scans
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install bandit detect-secrets semgrep
 
-      - name: Run Bandit
-        run: |
-          bandit -r app -f json -o bandit-ci.json || true
+      # -------------------------------------------------------
+      # 2. SAST scanning
+      # -------------------------------------------------------
 
-      - name: Run Semgrep
+      - name: Run Bandit SAST scan
+        run: |
+          bandit \
+            -r app \
+            -f json \
+            -o scans/bandit-ci.json \
+            || true
+
+      - name: Run Semgrep SAST scan
         run: |
           semgrep scan \
             --config auto \
             --json \
-            --output semgrep-ci.json \
-            app || true
+            --output scans/semgrep-ci.json \
+            app \
+            || true
 
-      - name: Run detect-secrets
+      # -------------------------------------------------------
+      # 3. Secret scanning
+      # -------------------------------------------------------
+
+      - name: Run detect-secrets scan
         run: |
           detect-secrets scan --baseline .secrets.baseline
 
-      
+      # -------------------------------------------------------
+      # 4. Install and run Trivy SCA
+      # -------------------------------------------------------
+
       - name: Install Trivy
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key |
-            gpg --dearmor |
-            sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" |
-            sudo tee /etc/apt/sources.list.d/trivy.list
+          sudo apt-get install -y \
+            wget \
+            apt-transport-https \
+            gnupg \
+            lsb-release
+
+          wget -qO - \
+            https://aquasecurity.github.io/trivy-repo/deb/public.key \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+
+          echo \
+            "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
+            | sudo tee /etc/apt/sources.list.d/trivy.list
+
           sudo apt-get update
           sudo apt-get install -y trivy
 
@@ -64,25 +99,86 @@ jobs:
           trivy fs \
             --scanners vuln \
             --format json \
-            --output trivy-sca-ci.json \
-            . || true
+            --output scans/trivy-sca-ci.json \
+            . \
+            || true
 
-      - name: Upload Trivy SCA report
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-sca-report
-          path: trivy-sca-ci.json
+      # -------------------------------------------------------
+      # 5. Evaluate the security quality gate
+      # -------------------------------------------------------
 
+      - name: Evaluate security quality gate
+        id: security-gate
+        continue-on-error: true
+        run: |
+          python scripts/security_gate.py
 
+      # -------------------------------------------------------
+      # 6. Generate GitHub Actions summary
+      # -------------------------------------------------------
+
+      - name: Generate security pipeline summary
+        if: always()
+        run: |
+          echo "# AI DevSecOps Security Pipeline" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "## Security scans" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "| Security check | Purpose | Report |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Bandit | Python SAST | scans/bandit-ci.json |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Semgrep | Pattern-based SAST | scans/semgrep-ci.json |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| detect-secrets | Secret detection | .secrets.baseline |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Trivy | Software Composition Analysis | scans/trivy-sca-ci.json |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.security-gate.outcome }}" = "success" ]; then
+            echo "## ✅ Deployment recommendation: ALLOW" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The automated security quality gate passed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## ❌ Deployment recommendation: BLOCK" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Blocking security findings were detected." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # -------------------------------------------------------
+      # 7. Upload scan reports
+      # -------------------------------------------------------
 
       - name: Upload Bandit report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bandit-report
-          path: bandit-ci.json
+          path: scans/bandit-ci.json
+          if-no-files-found: warn
 
       - name: Upload Semgrep report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: semgrep-report
-          path: semgrep-ci.json
+          path: scans/semgrep-ci.json
+          if-no-files-found: warn
+
+      - name: Upload Trivy SCA report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-sca-report
+          path: scans/trivy-sca-ci.json
+          if-no-files-found: warn
+
+      # -------------------------------------------------------
+      # 8. Final enforcement
+      # -------------------------------------------------------
+
+      - name: Enforce deployment decision
+        if: steps.security-gate.outcome == 'failure'
+        run: |
+          echo "Security quality gate failed."
+          echo "Deployment has been blocked."
+          exit 1
