@@ -1,0 +1,48 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequirerunasnonroot
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireRunAsNonRoot
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            message:
+              type: string
+
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequirerunasnonroot
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Deployment"
+
+          not input.review.object.spec.template.spec.securityContext.runAsNonRoot
+
+          message := object.get(
+            input.parameters,
+            "message",
+            "Deployment must configure spec.template.spec.securityContext.runAsNonRoot: true"
+          )
+
+          msg := message
+        }
+
+        violation[{"msg": msg}] {
+          input.review.object.kind == "Deployment"
+
+          input.review.object.spec.template.spec.securityContext.runAsNonRoot == false
+
+          message := object.get(
+            input.parameters,
+            "message",
+            "Deployment must configure spec.template.spec.securityContext.runAsNonRoot: true"
+          )
+
+          msg := message
+        }

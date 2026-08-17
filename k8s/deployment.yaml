@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calculator
+  namespace: ai-devsecops
+  labels:
+    app: calculator
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: calculator
+
+  template:
+    metadata:
+      labels:
+        app: calculator
+
+    spec:
+      containers:
+        - name: calculator
+          image: ai-devsecops-calculator:1.0
+          imagePullPolicy: Never
+
+          ports:
+            - containerPort: 8000

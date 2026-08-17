@@ -14,37 +14,51 @@
 =============================================
 
 ### Finding 1: Authorization Bypass Through User-Controlled Key
----------------------------------------------------------
 
-#### Vulnerability Title
-Authorization Bypass Through User-Controlled Key
+#### Vulnerability Details
+-------------------------
 
-#### Severity
-Low
-
-#### Affected Package and Installed Version
-langgraph@1.2.9
-
-#### Vulnerable Dependency Path
-AIAgent DevSecOpS@0.0.0 > langgraph@1.2.9 (transitive dependency)
+* **Vulnerability Title**: Authorization Bypass Through User-Controlled Key
+* **Severity**: Low
+* **Affected Package and Installed Version**: langgraph@1.2.9
+* **Vulnerable Dependency Path**: AIAgent DevSecOpS@0.0.0 > langgraph@1.2.9
 
 #### Technical Explanation
-The vulnerability occurs due to a key collision in the `default_cache_key()` and `_freeze()` functions of `langgraph/_internal/_cache.py`. An attacker can poison the result cache or obtain another user's cached result by submitting a numpy array or PIL image keyword argument that matches a victim's input byte-for-byte but differs in the dropped metadata.
+------------------------
+
+The vulnerability is caused by a key collision in the `default_cache_key()` and `_freeze()` functions of `langgraph/_internal/_cache.py`. An attacker can exploit this by submitting a numpy array or PIL image keyword argument that matches a victim's input byte-for-byte but differs in the dropped metadata, yielding an identical cache key.
 
 #### Potential Business Impact
-An attacker could exploit this vulnerability to bypass authorization checks and access sensitive data or perform unauthorized actions.
+---------------------------
 
-#### CVE or CWE Information
-CVE-2026-14742, CWE-639
+* **Confidentiality**: Low (Authorization bypass may allow access to sensitive data)
+* **Integrity**: Medium (Cache poisoning may lead to incorrect results or data corruption)
+
+#### CVE/CWE Information
+----------------------
+
+* **CVEs**: CVE-2026-14742
+* **CWEs**: CWE-639
 
 #### Recommended Fixed Version
-No direct upgrade is available. A fix was pushed into the `master` branch but not yet published.
+-----------------------------
+
+No direct upgrade is available.
 
 #### Recommended Remediation Action
-Wait for a new version of langgraph to be released that includes the fix.
+----------------------------------
+
+Since a fix was pushed into the `master` branch but not yet published, we recommend:
+
+1. Monitor the package's GitHub repository for updates.
+2. Consider applying a custom patch or workaround until an official fix is released.
 
 #### Priority
-Medium (due to low severity and lack of direct upgrade)
+------------
 
-### Recommendation
-Monitor the langgraph project for updates and plan to update as soon as a fixed version is available.
+* **Priority**: Medium (Low severity, but potential business impact)
+
+### Note
+------
+
+This vulnerability affects a transitive dependency (`langgraph`) of `AIAgent DevSecOpS`.

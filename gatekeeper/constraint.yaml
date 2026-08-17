@@ -1,0 +1,21 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireRunAsNonRoot
+metadata:
+  name: deployment-must-run-as-non-root
+spec:
+  enforcementAction: deny
+
+  match:
+    scope: Namespaced
+
+    namespaces:
+      - ai-devsecops
+
+    kinds:
+      - apiGroups:
+          - apps
+        kinds:
+          - Deployment
+
+  parameters:
+    message: "Security policy violation: deployments in ai-devsecops must run as a non-root user."

@@ -2,13 +2,15 @@ venv/
 .env
 **/__pycache__/
 *.py[cod]
+
 test-secrets.json
+
 .vscode/
 .DS_Store
 Thumbs.db
-scans/bandit-ci.json# Scan Reports
+
+# Scan Reports
 scans/*.json
 scans/*.html
 bandit-ci.json
 semgrep-ci.json
-trivy-sca-ci.json

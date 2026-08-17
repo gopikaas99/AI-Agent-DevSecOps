@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insecure-calculator
+  namespace: ai-devsecops
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: insecure-calculator
+
+  template:
+    metadata:
+      labels:
+        app: insecure-calculator
+
+    spec:
+      containers:
+        - name: calculator
+          image: ai-devsecops-calculator:1.0
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8000
