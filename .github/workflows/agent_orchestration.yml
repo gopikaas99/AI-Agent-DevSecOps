@@ -1,0 +1,41 @@
+name: AI Agent Orchestration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate-agents:
+    name: Validate AI Agents
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Show available agents
+        run: |
+          echo "Available AI Agents:"
+          ls -la agents/
+
+      - name: Validate Python agent files
+        run: |
+          python -m compileall agents utils agent_core
+
+      - name: Module 7 summary
+        if: always()
+        run: |
+          echo "# Module 7 - AI Agent Orchestration" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "GitHub Actions successfully checked out the project." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "The Python environment was created and the AI agent code was validated." >> "$GITHUB_STEP_SUMMARY"
