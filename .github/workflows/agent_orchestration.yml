@@ -290,6 +290,49 @@ jobs:
           name: container-hardener-report
           path: reports/container_security_report.md
           if-no-files-found: error
+
+            # -------------------------------------------------------
+      # Policy Agent Orchestration
+      # -------------------------------------------------------
+
+      - name: Install Checkov
+        run: |
+          pip install checkov
+
+      - name: Run Checkov Kubernetes Scan
+        run: |
+          mkdir -p scans
+
+          checkov \
+            -d k8s \
+            -o json \
+            --output-file-path scans/checkov-k8s.json \
+            || true
+
+      - name: Verify Checkov Report
+        run: |
+          test -f scans/checkov-k8s.json
+          echo "Checkov Kubernetes report generated successfully."
+          ls -lh scans/checkov-k8s.json
+
+      - name: Run Policy Agent
+        timeout-minutes: 10
+        run: |
+          echo "Starting Policy Agent..."
+          python -u -m agents.policy_agent
+
+      - name: Verify Kubernetes Policy Report
+        run: |
+          test -f reports/kubernetes_policy_report.md
+          echo "Kubernetes policy report generated successfully."
+          ls -lh reports/kubernetes_policy_report.md
+
+      - name: Upload Policy Agent Report
+        uses: actions/upload-artifact@v6
+        with:
+          name: policy-agent-report
+          path: reports/kubernetes_policy_report.md
+          if-no-files-found: error
       
       - name: Module 7 summary
         if: always()
