@@ -138,9 +138,10 @@ jobs:
           ls -lh scans/snyk.json
 
       - name: Run SCA Agent
+        timeout-minutes: 10
         run: |
           echo "Starting SCA Agent..."
-          python -m agents.sca_agent
+          python -u -m agents.sca_agent
 
       - name: Verify SCA Report
         run: |
