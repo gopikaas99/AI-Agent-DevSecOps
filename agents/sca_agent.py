@@ -244,7 +244,6 @@ def generate_sca_report() -> None:
 
     print("Loading SCA prompt...")
 
-       print("Loading SCA prompt...")
 
     prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
     findings_text = format_findings(unique_vulnerabilities)
