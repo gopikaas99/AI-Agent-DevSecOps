@@ -213,6 +213,84 @@ jobs:
           path: reports/pipeline_security_report.md
           if-no-files-found: error
       
+            # -------------------------------------------------------
+      # Container Hardener Agent Orchestration
+      # -------------------------------------------------------
+
+      - name: Build Calculator Docker Image
+        run: |
+          echo "Building Calculator Docker image..."
+          docker build \
+            -t ai-devsecops-calculator:ci \
+            .
+
+      - name: Verify Docker Image
+        run: |
+          docker images ai-devsecops-calculator:ci
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+
+          sudo apt-get install -y \
+            wget \
+            apt-transport-https \
+            gnupg \
+            lsb-release
+
+          wget -qO - \
+            https://aquasecurity.github.io/trivy-repo/deb/public.key \
+            | gpg --dearmor \
+            | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
+
+          echo \
+            "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
+            | sudo tee /etc/apt/sources.list.d/trivy.list
+
+          sudo apt-get update
+          sudo apt-get install -y trivy
+
+          trivy --version
+
+      - name: Run Trivy Container Image Scan
+        run: |
+          mkdir -p scans
+
+          trivy image \
+            --format json \
+            --output scans/container-trivy.json \
+            ai-devsecops-calculator:ci \
+            || true
+
+      - name: Verify Trivy Container Report
+        run: |
+          test -f scans/container-trivy.json
+
+          echo "Trivy container report generated successfully."
+
+          ls -lh scans/container-trivy.json
+
+      - name: Run Container Hardener Agent
+        timeout-minutes: 10
+        run: |
+          echo "Starting Container Hardener Agent..."
+          python -u -m agents.container_hardener
+
+      - name: Verify Container Security Report
+        run: |
+          test -f reports/container_security_report.md
+
+          echo "Container security report generated successfully."
+
+          ls -lh reports/container_security_report.md
+
+      - name: Upload Container Hardener Report
+        uses: actions/upload-artifact@v6
+        with:
+          name: container-hardener-report
+          path: reports/container_security_report.md
+          if-no-files-found: error
+      
       - name: Module 7 summary
         if: always()
         run: |

@@ -41,7 +41,7 @@ def generate_pipeline_report(state: PipelineState):
 
     llm = get_llm()
 
-    prompt = load_prompt("prompts/pipeline_guard_prompt.txt")
+    prompt = load_prompt("prompts/pipeline_prompt.txt")
 
     final_prompt = f"""
 {prompt}
