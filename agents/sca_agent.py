@@ -244,13 +244,15 @@ def generate_sca_report() -> None:
 
     print("Loading SCA prompt...")
 
+       print("Loading SCA prompt...")
+
     prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
-findings_text = format_findings(unique_vulnerabilities)
+    findings_text = format_findings(unique_vulnerabilities)
 
-is_ci = os.getenv("CI", "").lower() == "true"
+    is_ci = os.getenv("CI", "").lower() == "true"
 
-if is_ci:
-    final_prompt = f"""
+    if is_ci:
+        final_prompt = f"""
 You are an AI-assisted Software Composition Analysis security assistant.
 
 Analyze the dependency vulnerability findings below.
@@ -270,8 +272,8 @@ Dependency findings:
 
 {findings_text}
 """
-else:
-    final_prompt = prompt_template.replace("{findings}", findings_text)
+    else:
+        final_prompt = prompt_template.replace("{findings}", findings_text)
 
     print("Initializing Ollama LLM...")
 
@@ -304,11 +306,3 @@ else:
 
     print("SCA analysis completed successfully.")
     print(f"Report generated at: {OUTPUT_PATH}")
-
-
-if __name__ == "__main__":
-    try:
-        generate_sca_report()
-    except Exception as error:
-        print(f"SCA Agent failed: {error}")
-        raise
