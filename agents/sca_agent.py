@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any
+from utils.llm import get_llm
 
 from langchain_ollama import ChatOllama
 
@@ -248,10 +249,7 @@ def generate_sca_report() -> None:
 
     print("Initializing Ollama LLM...")
 
-    llm = ChatOllama(
-        model="llama3.1:8b",
-        temperature=0.1,
-    )
+    llm = get_llm()
 
     print("Sending dependency findings to Ollama...")
 
@@ -265,7 +263,7 @@ def generate_sca_report() -> None:
 - **Source file:** `scans/snyk.json`
 - **Total vulnerability instances:** {len(raw_vulnerabilities)}
 - **Unique findings analyzed:** {len(unique_vulnerabilities)}
-- **Analysis model:** Ollama `llama3.1:8b`
+- **Analysis model:** Ollama
 
 ---
 
