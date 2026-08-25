@@ -121,7 +121,8 @@ jobs:
 
       - name: Install Snyk CLI
         run: |
-          npm install -g snyk
+          sudo npm install -g snyk
+          snyk --version
 
       - name: Run Snyk SCA Scan
         env:
