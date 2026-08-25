@@ -70,6 +70,51 @@ jobs:
           path: reports/threat_report.md
           if-no-files-found: error
       
+      - name: Install SAST tools
+        run: |
+          pip install bandit semgrep
+
+      - name: Prepare scan directory
+        run: |
+          mkdir -p scans
+      
+      - name: Run Bandit SAST Scan
+        run: |
+          bandit -r app -f json -o scans/bandit.json || true 
+
+      - name: Run Semgrep SAST Scan
+        run: |
+          semgrep scan --config auto --json --output scans/semgrep.json app || true
+     
+      - name: Verify SAST Scan Reports
+        run: |
+          echo "Checking SAST scan reports..."
+          test -f scans/bandit.json
+          test -f scans/semgrep.json
+          ls -lh scans/bandit.json
+          ls -lh scans/semgrep.json
+      
+      - name: Run SAST Agent
+        run: |
+          echo "Starting SAST Agent..."
+          python -m agents.sast_agent
+      
+
+      - name: Verify SAST Report
+        run: |
+          echo "Checking generated SAST report..."
+          test -f reports/sast_report.md
+          echo "SAST report generated successfully."
+          ls -lh reports/sast_report.md
+      
+      - name: Upload SAST Report
+        uses: actions/upload-artifact@v6
+        with:
+          name: sast-agent-report
+          path: reports/sast_report.md
+          if-no-files-found: error
+      
+      
       - name: Module 7 summary
         if: always()
         run: |
