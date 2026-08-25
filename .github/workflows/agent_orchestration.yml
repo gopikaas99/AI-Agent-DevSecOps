@@ -51,6 +51,25 @@ jobs:
         run: |
           ollama list
 
+      - name: Run Threat Modeler Agent
+        run: |
+          echo "Starting Threat Modeler Agent..."
+          python -m agents.threat_modeler
+      
+      - name: Verify Threat Model Report
+        run: |
+          echo "Checking generated threat report..."
+          test -f reports/threat_report.md
+          echo "Threat Model Report generated successfully."
+          ls -lh reports/threat_report.md
+      
+      - name: Upload Threat Model Report
+        uses: actions/upload-artifact@v6
+        with:
+          name: threat-model-report
+          path: reports/threat_report.md
+          if-no-files-found: error
+      
       - name: Module 7 summary
         if: always()
         run: |
