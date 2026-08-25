@@ -113,7 +113,46 @@ jobs:
           name: sast-agent-report
           path: reports/sast_report.md
           if-no-files-found: error
-      
+    
+
+          # -------------------------------------------------------
+      # SCA Agent Orchestration
+      # -------------------------------------------------------
+
+      - name: Install Snyk CLI
+        run: |
+          npm install -g snyk
+
+      - name: Run Snyk SCA Scan
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          mkdir -p scans
+          snyk test --json > scans/snyk.json || true
+
+      - name: Verify Snyk Report
+        run: |
+          test -f scans/snyk.json
+          echo "Snyk report generated successfully."
+          ls -lh scans/snyk.json
+
+      - name: Run SCA Agent
+        run: |
+          echo "Starting SCA Agent..."
+          python -m agents.sca_agent
+
+      - name: Verify SCA Report
+        run: |
+          test -f reports/sca_report.md
+          echo "SCA report generated successfully."
+          ls -lh reports/sca_report.md
+
+      - name: Upload SCA Report
+        uses: actions/upload-artifact@v6
+        with:
+          name: sca-agent-report
+          path: reports/sca_report.md
+          if-no-files-found: error
       
       - name: Module 7 summary
         if: always()
