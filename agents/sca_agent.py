@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 from utils.llm import get_llm
+import os
 
 from langchain_ollama import ChatOllama
 
@@ -244,7 +245,32 @@ def generate_sca_report() -> None:
     print("Loading SCA prompt...")
 
     prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
-    findings_text = format_findings(unique_vulnerabilities)
+findings_text = format_findings(unique_vulnerabilities)
+
+is_ci = os.getenv("CI", "").lower() == "true"
+
+if is_ci:
+    final_prompt = f"""
+You are an AI-assisted Software Composition Analysis security assistant.
+
+Analyze the dependency vulnerability findings below.
+
+Provide only:
+
+1. Vulnerability Name
+2. Severity
+3. Affected Dependency
+4. Why It Matters
+5. Recommended Remediation
+
+Keep the response concise and under 250 words.
+Do not add extra sections.
+
+Dependency findings:
+
+{findings_text}
+"""
+else:
     final_prompt = prompt_template.replace("{findings}", findings_text)
 
     print("Initializing Ollama LLM...")
@@ -255,6 +281,8 @@ def generate_sca_report() -> None:
 
     response = llm.invoke(final_prompt)
 
+    model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+
     report_header = f"""# AI-Assisted SCA Security Report
 
 ## Scan summary
@@ -263,7 +291,7 @@ def generate_sca_report() -> None:
 - **Source file:** `scans/snyk.json`
 - **Total vulnerability instances:** {len(raw_vulnerabilities)}
 - **Unique findings analyzed:** {len(unique_vulnerabilities)}
-- **Analysis model:** Ollama
+- **Analysis model:** Ollama `{model_name}`
 
 ---
 
