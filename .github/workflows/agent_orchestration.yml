@@ -155,6 +155,63 @@ jobs:
           name: sca-agent-report
           path: reports/sca_report.md
           if-no-files-found: error
+
+          # -------------------------------------------------------
+      # Pipeline Guard Agent Orchestration
+      # -------------------------------------------------------
+
+      - name: Install detect-secrets
+        run: |
+          pip install detect-secrets
+
+      - name: Prepare Pipeline Guard input reports
+        run: |
+          mkdir -p reports
+
+          echo "=== Bandit Security Scan ===" > reports/bandit_report.txt
+          bandit -r app >> reports/bandit_report.txt 2>&1 || true
+
+          echo "=== Secret Detection Scan ===" > reports/detect_secrets_report.txt
+          detect-secrets scan >> reports/detect_secrets_report.txt 2>&1 || true
+
+          echo "=== DAST / ZAP Security Report ===" > reports/zap_report.txt
+
+          if [ -f reports/dast_report.md ]; then
+            cat reports/dast_report.md >> reports/zap_report.txt
+          else
+            echo "No DAST report available in this CI run." >> reports/zap_report.txt
+          fi
+
+      - name: Verify Pipeline Guard inputs
+        run: |
+          test -f reports/bandit_report.txt
+          test -f reports/detect_secrets_report.txt
+          test -f reports/zap_report.txt
+
+          echo "Pipeline Guard input reports are ready."
+
+          ls -lh reports/bandit_report.txt
+          ls -lh reports/detect_secrets_report.txt
+          ls -lh reports/zap_report.txt
+
+      - name: Run Pipeline Guard Agent
+        timeout-minutes: 10
+        run: |
+          echo "Starting Pipeline Guard Agent..."
+          python -u -m agents.pipeline_guard
+
+      - name: Verify Pipeline Security Report
+        run: |
+          test -f reports/pipeline_security_report.md
+          echo "Pipeline security report generated successfully."
+          ls -lh reports/pipeline_security_report.md
+
+      - name: Upload Pipeline Guard Report
+        uses: actions/upload-artifact@v6
+        with:
+          name: pipeline-guard-report
+          path: reports/pipeline_security_report.md
+          if-no-files-found: error
       
       - name: Module 7 summary
         if: always()
