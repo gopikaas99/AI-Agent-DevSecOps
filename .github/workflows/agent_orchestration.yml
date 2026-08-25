@@ -336,6 +336,7 @@ jobs:
           if-no-files-found: error
       
           # -------------------------------------------------------
+            # -------------------------------------------------------
       # Final Orchestration Summary
       # -------------------------------------------------------
 
@@ -382,40 +383,3 @@ jobs:
           echo "## Final Result" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "GitHub Actions orchestrated the selected AI-assisted DevSecOps security stages and collected the generated security reports." >> "$GITHUB_STEP_SUMMARY"
-        if: always()
-        run: |
-          echo "# Module 7 - AI Agent DevSecOps Orchestration" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "## Environment" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- GitHub-hosted runner: ubuntu-latest" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Python environment configured successfully" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Ollama CI model: $OLLAMA_MODEL" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "## Orchestrated AI Security Agents" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "| Agent | Security Purpose | Generated Report |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Threat Modeler Agent | Threat modeling | reports/threat_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| SAST Agent | Static code security analysis | reports/sast_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| SCA Agent | Dependency vulnerability analysis | reports/sca_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Pipeline Guard Agent | Pipeline security assessment | reports/pipeline_security_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Container Hardener Agent | Container image security | reports/container_security_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Policy Agent | Kubernetes policy security | reports/kubernetes_policy_report.md |" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "## Final Result" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "GitHub Actions orchestrated the selected AI-assisted DevSecOps security stages and collected the generated security reports." >> "$GITHUB_STEP_SUMMARY"
-        if: always()
-        run: |
-          echo "# Module 7 - AI Agent Orchestration" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "GitHub Actions successfully checked out the project." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "The Python environment and AI agent code were validated." >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Ollama was configured with the CI model: $OLLAMA_MODEL." >> "$GITHUB_STEP_SUMMARY"
