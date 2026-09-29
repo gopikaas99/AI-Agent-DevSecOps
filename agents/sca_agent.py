@@ -305,3 +305,6 @@ Dependency findings:
 
     print("SCA analysis completed successfully.")
     print(f"Report generated at: {OUTPUT_PATH}")
+
+if __name__ == "__main__":
+    generate_sca_report()

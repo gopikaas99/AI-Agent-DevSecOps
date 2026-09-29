@@ -1,17 +1,17 @@
 {
   "errors": [],
-  "generated_at": "2026-07-13T17:11:42Z",
+  "generated_at": "2026-09-29T09:27:00Z",
   "metrics": {
     "_totals": {
       "CONFIDENCE.HIGH": 4,
       "CONFIDENCE.LOW": 0,
-      "CONFIDENCE.MEDIUM": 2,
+      "CONFIDENCE.MEDIUM": 3,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 2,
-      "SEVERITY.LOW": 4,
+      "SEVERITY.LOW": 5,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 75,
+      "loc": 85,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -31,13 +31,13 @@
     "app/auth.py": {
       "CONFIDENCE.HIGH": 0,
       "CONFIDENCE.LOW": 0,
-      "CONFIDENCE.MEDIUM": 1,
+      "CONFIDENCE.MEDIUM": 2,
       "CONFIDENCE.UNDEFINED": 0,
       "SEVERITY.HIGH": 0,
-      "SEVERITY.LOW": 1,
+      "SEVERITY.LOW": 2,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 13,
+      "loc": 15,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -63,7 +63,7 @@
       "SEVERITY.LOW": 0,
       "SEVERITY.MEDIUM": 0,
       "SEVERITY.UNDEFINED": 0,
-      "loc": 8,
+      "loc": 16,
       "nosec": 0,
       "skipped_tests": 0
     },
@@ -96,7 +96,7 @@
   },
   "results": [
     {
-      "code": "5 USERNAME = \"admin\"\n6 PASSWORD = \"password123\"\n7 \n",
+      "code": "5 USERNAME = \"admin\"\n6 PASSWORD = \"password123\"\n7 API_KEY = \"sk_test_123456789\"\n",
       "col_offset": 11,
       "end_col_offset": 24,
       "filename": "app/auth.py",
@@ -110,6 +110,26 @@
       "line_number": 6,
       "line_range": [
         6
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html",
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "7 API_KEY = \"sk_test_123456789\"\n8 github_token = \"ghp_1234567890abcdefghijklmnopqrstuvwxyz\"\n9 \n",
+      "col_offset": 15,
+      "end_col_offset": 57,
+      "filename": "app/auth.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'ghp_1234567890abcdefghijklmnopqrstuvwxyz'",
+      "line_number": 8,
+      "line_range": [
+        8
       ],
       "more_info": "https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html",
       "test_id": "B105",
