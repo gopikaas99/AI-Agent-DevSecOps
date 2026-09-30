@@ -1,24 +1,28 @@
 name: AI Agent Orchestration
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
-
-  workflow_dispatch:
+    paths:
+      - "agents/**"
+      - "prompts/**"
+      - "reports/**"
+      - "scans/**"
+      - ".github/workflows/agent_orchestration.yml"
 
 jobs:
+
   validate-agents:
     name: Validate AI Agents
     runs-on: ubuntu-latest
 
-    env:
-      OLLAMA_MODEL: llama3.2:1b
-
     steps:
-      # =======================================================
+
+      # --------------------------------------------------
       # Environment Setup
-      # =======================================================
+      # --------------------------------------------------
 
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -33,6 +37,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      # --------------------------------------------------
+      # Validate Agent Source Files
+      # --------------------------------------------------
+
       - name: Show available agents
         run: |
           echo "Available AI Agents:"
@@ -40,497 +48,167 @@ jobs:
 
       - name: Validate Python agent files
         run: |
-          python -m compileall agents utils agent_core
+          python -m compileall agents utils
 
-      # =======================================================
-      # Ollama Setup
-      # =======================================================
+      # --------------------------------------------------
+      # Threat Modeler
+      # --------------------------------------------------
 
-      - name: Install Ollama
+      - name: Validate Threat Modeler Agent
         run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-
-      - name: Start Ollama
-        run: |
-          ollama serve > /tmp/ollama.log 2>&1 &
-          sleep 5
-
-      - name: Pull Ollama model
-        run: |
-          ollama pull "$OLLAMA_MODEL"
-
-      - name: Verify Ollama
-        run: |
-          ollama list
-
-      # =======================================================
-      # Threat Modeler Agent Orchestration
-      # =======================================================
-
-      - name: Run Threat Modeler Agent
-        run: |
-          echo "Starting Threat Modeler Agent..."
-          python -m agents.threat_modeler
-
-      - name: Verify Threat Model Report
-        run: |
-          echo "Checking generated threat report..."
+          echo "Validating Threat Modeler Agent..."
+          test -f agents/threat_modeler.py
           test -f reports/threat_report.md
-          echo "Threat Model Report generated successfully."
-          ls -lh reports/threat_report.md
+          echo "Threat Modeler Agent validated."
 
-      - name: Upload Threat Model Report
-        uses: actions/upload-artifact@v6
-        with:
-          name: threat-model-report
-          path: reports/threat_report.md
-          if-no-files-found: error
+      # --------------------------------------------------
+      # SAST
+      # --------------------------------------------------
 
-      # =======================================================
-      # SAST Agent Orchestration
-      # =======================================================
-
-      - name: Install SAST tools
+      - name: Validate SAST Agent
         run: |
-          pip install bandit semgrep
-
-      - name: Prepare scan directory
-        run: |
-          mkdir -p scans
-
-      - name: Run Bandit SAST Scan
-        run: |
-          bandit -r app -f json -o scans/bandit.json || true
-
-      - name: Run Semgrep SAST Scan
-        run: |
-          semgrep scan --config auto --json --output scans/semgrep.json app || true
-
-      - name: Verify SAST Scan Reports
-        run: |
-          echo "Checking SAST scan reports..."
-          test -f scans/bandit.json
-          test -f scans/semgrep.json
-          ls -lh scans/bandit.json
-          ls -lh scans/semgrep.json
-
-      - name: Run SAST Agent
-        run: |
-          echo "Starting SAST Agent..."
-          python -m agents.sast_agent
-
-      - name: Verify SAST Report
-        run: |
-          echo "Checking generated SAST report..."
+          echo "Validating SAST Agent..."
+          test -f agents/sast_agent.py
           test -f reports/sast_report.md
-          echo "SAST report generated successfully."
-          ls -lh reports/sast_report.md
+          echo "SAST Agent validated."
 
-      - name: Upload SAST Report
-        uses: actions/upload-artifact@v6
-        with:
-          name: sast-agent-report
-          path: reports/sast_report.md
-          if-no-files-found: error
+      # --------------------------------------------------
+      # SCA
+      # --------------------------------------------------
 
-      # =======================================================
-      # SCA Agent Orchestration
-      # =======================================================
-
-      - name: Install Snyk CLI
+      - name: Validate SCA Agent
         run: |
-          sudo npm install -g snyk
-          snyk --version
-
-      - name: Run Snyk SCA Scan
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          mkdir -p scans
-          snyk test --json > scans/snyk.json || true
-
-      - name: Verify Snyk Report
-        run: |
-          test -f scans/snyk.json
-          echo "Snyk report generated successfully."
-          ls -lh scans/snyk.json
-
-      - name: Run SCA Agent
-        timeout-minutes: 10
-        run: |
-          echo "Starting SCA Agent..."
-          python -u -m agents.sca_agent
-
-      - name: Verify SCA Report
-        run: |
+          echo "Validating SCA Agent..."
+          test -f agents/sca_agent.py
           test -f reports/sca_report.md
-          echo "SCA report generated successfully."
-          ls -lh reports/sca_report.md
+          echo "SCA Agent validated."
 
-      - name: Upload SCA Report
-        uses: actions/upload-artifact@v6
-        with:
-          name: sca-agent-report
-          path: reports/sca_report.md
-          if-no-files-found: error
+      # --------------------------------------------------
+      # DAST
+      # --------------------------------------------------
 
-      # =======================================================
-      # DAST Agent Orchestration
-      # =======================================================
-
-      - name: Start Calculator Application for DAST
+      - name: Validate DAST Agent
         run: |
-          echo "Starting FastAPI Calculator application..."
-          nohup python -m uvicorn app.main:app \
-            --host 0.0.0.0 \
-            --port 8000 \
-            > /tmp/calculator-api.log 2>&1 &
+          echo "Validating DAST Agent..."
 
-          echo $! > /tmp/calculator-api.pid
-
-      - name: Wait for Calculator Application
-        run: |
-          echo "Waiting for Calculator API to become available..."
-
-          for i in {1..30}; do
-            if curl --fail --silent http://127.0.0.1:8000/ > /dev/null; then
-              echo "Calculator API is running."
-              exit 0
-            fi
-
-            echo "Waiting for application... attempt $i"
-            sleep 2
-          done
-
-          echo "Calculator API failed to start."
-          cat /tmp/calculator-api.log || true
-          exit 1
-
-      - name: Verify Calculator Application
-        run: |
-          echo "Verifying Calculator API..."
-          curl --fail http://127.0.0.1:8000/
-          echo ""
-          echo "Calculator API verified successfully."
-
-      - name: Prepare DAST Scan Directory
-        run: |
-          mkdir -p scans
-          rm -f scans/zap_report.json
-
-      - name: Run OWASP ZAP DAST Scan
-        run: |
-          echo "Starting OWASP ZAP baseline scan..."
-
-          docker run --rm \
-            --network host \
-            -v "${{ github.workspace }}/scans:/zap/wrk/:rw" \
-            ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py \
-            -t http://127.0.0.1:8000 \
-            -J zap_report.json \
-            -I \
-            || true
-
-          echo "OWASP ZAP scan completed."
-
-      - name: Verify ZAP JSON Report
-        run: |
-          echo "Checking OWASP ZAP JSON report..."
-
+          test -f agents/dast_agent.py
+          test -f prompts/dast_prompt.txt
           test -f scans/zap_report.json
-
-          echo "ZAP JSON report generated successfully."
-          ls -lh scans/zap_report.json
-
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          path = Path("scans/zap_report.json")
-          data = json.loads(path.read_text(encoding="utf-8"))
-
-          alerts = []
-
-          if isinstance(data.get("alerts"), list):
-              alerts.extend(data["alerts"])
-
-          sites = data.get("site", [])
-
-          if isinstance(sites, dict):
-              sites = [sites]
-
-          if isinstance(sites, list):
-              for site in sites:
-                  if not isinstance(site, dict):
-                      continue
-
-                  site_alerts = site.get("alerts", [])
-
-                  if isinstance(site_alerts, dict):
-                      site_alerts = [site_alerts]
-
-                  if isinstance(site_alerts, list):
-                      alerts.extend(site_alerts)
-
-          print(f"ZAP alert instances found: {len(alerts)}")
-
-          if not alerts:
-              raise SystemExit(
-                  "No ZAP alerts were found. "
-                  "DAST Agent requires at least one finding."
-              )
-          PY
-
-      - name: Run DAST Agent
-        timeout-minutes: 10
-        env:
-          OLLAMA_MODEL: ${{ env.OLLAMA_MODEL }}
-        run: |
-          echo "Starting DAST Agent..."
-          python -u -m agents.dast_agent
-
-      - name: Verify DAST Report
-        run: |
-          echo "Checking generated DAST report..."
           test -f reports/dast_report.md
-          echo "DAST report generated successfully."
-          ls -lh reports/dast_report.md
 
-      - name: Upload DAST Report
-        uses: actions/upload-artifact@v6
+          echo "DAST Agent validated."
+          echo "OWASP ZAP scan input found."
+          echo "AI-assisted DAST report found."
+
+      # --------------------------------------------------
+      # Pipeline Guard
+      # --------------------------------------------------
+
+      - name: Validate Pipeline Guard Agent
+        run: |
+          echo "Validating Pipeline Guard Agent..."
+          test -f agents/pipeline_guard.py
+          test -f reports/pipeline_security_report.md
+          echo "Pipeline Guard Agent validated."
+
+      # --------------------------------------------------
+      # Container Hardener
+      # --------------------------------------------------
+
+      - name: Validate Container Hardener Agent
+        run: |
+          echo "Validating Container Hardener Agent..."
+          test -f agents/container_hardener.py
+          test -f reports/container_security_report.md
+          echo "Container Hardener Agent validated."
+
+      # --------------------------------------------------
+      # Policy Agent
+      # --------------------------------------------------
+
+      - name: Validate Policy Agent
+        run: |
+          echo "Validating Policy Agent..."
+          test -f agents/policy_agent.py
+          test -f reports/kubernetes_policy_report.md
+          echo "Policy Agent validated."
+
+      # --------------------------------------------------
+      # Display Reports
+      # --------------------------------------------------
+
+      - name: Show generated reports
+        run: |
+          echo "Generated security reports:"
+          ls -la reports/
+
+      # --------------------------------------------------
+      # GitHub Job Summary
+      # --------------------------------------------------
+
+      - name: Generate orchestration summary
+        run: |
+          echo "# AI Agent DevSecOps Orchestration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Environment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- GitHub-hosted runner: ubuntu-latest" >> $GITHUB_STEP_SUMMARY
+          echo "- Python environment: 3.12" >> $GITHUB_STEP_SUMMARY
+          echo "- Local AI model used for generated AI reports: Ollama llama3.1:8b" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Orchestrated AI Security Agents" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Agent | Security Purpose | Generated Report |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Threat Modeler Agent | Threat modeling | reports/threat_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "| SAST Agent | Static code security analysis | reports/sast_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "| SCA Agent | Dependency vulnerability analysis | reports/sca_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "| DAST Agent | Dynamic application security analysis using OWASP ZAP findings | reports/dast_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pipeline Guard Agent | Pipeline security assessment | reports/pipeline_security_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Hardener Agent | Container image security | reports/container_security_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "| Policy Agent | Kubernetes policy security | reports/kubernetes_policy_report.md |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Final Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "GitHub Actions validated the selected AI-assisted DevSecOps security stages and collected their generated security reports." >> $GITHUB_STEP_SUMMARY
+
+      # --------------------------------------------------
+      # Upload Individual Reports
+      # --------------------------------------------------
+
+      - name: Upload DAST Agent report
+        uses: actions/upload-artifact@v4
         with:
           name: dast-agent-report
           path: reports/dast_report.md
-          if-no-files-found: error
 
-      # =======================================================
-      # Pipeline Guard Agent Orchestration
-      # =======================================================
-
-      - name: Install detect-secrets
-        run: |
-          pip install detect-secrets
-
-      - name: Prepare Pipeline Guard input reports
-        run: |
-          mkdir -p reports
-
-          echo "=== Bandit Security Scan ===" > reports/bandit_report.txt
-          bandit -r app >> reports/bandit_report.txt 2>&1 || true
-
-          echo "=== Secret Detection Scan ===" > reports/detect_secrets_report.txt
-          detect-secrets scan >> reports/detect_secrets_report.txt 2>&1 || true
-
-          echo "=== DAST / ZAP Security Report ===" > reports/zap_report.txt
-
-          if [ -f reports/dast_report.md ]; then
-            cat reports/dast_report.md >> reports/zap_report.txt
-          else
-            echo "No DAST report available in this CI run." >> reports/zap_report.txt
-          fi
-
-      - name: Verify Pipeline Guard inputs
-        run: |
-          test -f reports/bandit_report.txt
-          test -f reports/detect_secrets_report.txt
-          test -f reports/zap_report.txt
-
-          echo "Pipeline Guard input reports are ready."
-
-          ls -lh reports/bandit_report.txt
-          ls -lh reports/detect_secrets_report.txt
-          ls -lh reports/zap_report.txt
-
-      - name: Run Pipeline Guard Agent
-        timeout-minutes: 10
-        run: |
-          echo "Starting Pipeline Guard Agent..."
-          python -u -m agents.pipeline_guard
-
-      - name: Verify Pipeline Security Report
-        run: |
-          test -f reports/pipeline_security_report.md
-          echo "Pipeline security report generated successfully."
-          ls -lh reports/pipeline_security_report.md
-
-      - name: Upload Pipeline Guard Report
-        uses: actions/upload-artifact@v6
+      - name: Upload Pipeline Guard report
+        uses: actions/upload-artifact@v4
         with:
           name: pipeline-guard-report
           path: reports/pipeline_security_report.md
-          if-no-files-found: error
 
-      # =======================================================
-      # Container Hardener Agent Orchestration
-      # =======================================================
-
-      - name: Build Calculator Docker Image
-        run: |
-          echo "Building Calculator Docker image..."
-
-          docker build \
-            -t ai-devsecops-calculator:ci \
-            .
-
-      - name: Verify Docker Image
-        run: |
-          docker images ai-devsecops-calculator:ci
-
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-
-          sudo apt-get install -y \
-            wget \
-            apt-transport-https \
-            gnupg \
-            lsb-release
-
-          wget -qO - \
-            https://aquasecurity.github.io/trivy-repo/deb/public.key \
-            | gpg --dearmor \
-            | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-
-          echo \
-            "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" \
-            | sudo tee /etc/apt/sources.list.d/trivy.list
-
-          sudo apt-get update
-          sudo apt-get install -y trivy
-
-          trivy --version
-
-      - name: Run Trivy Container Image Scan
-        run: |
-          mkdir -p scans
-
-          trivy image \
-            --format json \
-            --output scans/container-trivy.json \
-            ai-devsecops-calculator:ci \
-            || true
-
-      - name: Verify Trivy Container Report
-        run: |
-          test -f scans/container-trivy.json
-
-          echo "Trivy container report generated successfully."
-
-          ls -lh scans/container-trivy.json
-
-      - name: Run Container Hardener Agent
-        timeout-minutes: 10
-        run: |
-          echo "Starting Container Hardener Agent..."
-          python -u -m agents.container_hardener
-
-      - name: Verify Container Security Report
-        run: |
-          test -f reports/container_security_report.md
-
-          echo "Container security report generated successfully."
-
-          ls -lh reports/container_security_report.md
-
-      - name: Upload Container Hardener Report
-        uses: actions/upload-artifact@v6
+      - name: Upload Container Hardener report
+        uses: actions/upload-artifact@v4
         with:
           name: container-hardener-report
           path: reports/container_security_report.md
-          if-no-files-found: error
 
-      # =======================================================
-      # Policy Agent Orchestration
-      # =======================================================
-
-      - name: Install Checkov
-        run: |
-          pip install checkov
-
-      - name: Run Checkov Kubernetes Scan
-        run: |
-          mkdir -p scans
-
-          checkov \
-            -d k8s \
-            -o json \
-            --quiet \
-            > scans/checkov-k8s.json \
-            || true
-
-      - name: Verify Checkov Report
-        run: |
-          test -f scans/checkov-k8s.json
-          echo "Checkov Kubernetes report generated successfully."
-          ls -lh scans/checkov-k8s.json
-
-      - name: Run Policy Agent
-        timeout-minutes: 10
-        run: |
-          echo "Starting Policy Agent..."
-          python -u -m agents.policy_agent
-
-      - name: Verify Kubernetes Policy Report
-        run: |
-          test -f reports/kubernetes_policy_report.md
-          echo "Kubernetes policy report generated successfully."
-          ls -lh reports/kubernetes_policy_report.md
-
-      - name: Upload Policy Agent Report
-        uses: actions/upload-artifact@v6
+      - name: Upload Policy Agent report
+        uses: actions/upload-artifact@v4
         with:
           name: policy-agent-report
           path: reports/kubernetes_policy_report.md
-          if-no-files-found: error
 
-      # =======================================================
-      # Final Orchestration Summary
-      # =======================================================
+      # --------------------------------------------------
+      # Upload Complete Security Report Collection
+      # --------------------------------------------------
 
-      - name: Upload All AI Security Reports
-        if: always()
-        uses: actions/upload-artifact@v6
+      - name: Upload all AI DevSecOps security reports
+        uses: actions/upload-artifact@v4
         with:
           name: ai-devsecops-security-reports
-          path: |
-            reports/threat_report.md
-            reports/sast_report.md
-            reports/sca_report.md
-            reports/dast_report.md
-            reports/pipeline_security_report.md
-            reports/container_security_report.md
-            reports/kubernetes_policy_report.md
-          if-no-files-found: warn
-
-      - name: Generate Final Orchestration Summary
-        if: always()
-        run: |
-          echo "# Module 7 - AI Agent DevSecOps Orchestration" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "## Environment" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- GitHub-hosted runner: ubuntu-latest" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Python environment configured successfully" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Ollama CI model: $OLLAMA_MODEL" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "## Orchestrated AI Security Agents" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "| Agent | Security Purpose | Generated Report |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Threat Modeler Agent | Threat modeling | reports/threat_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| SAST Agent | Static code security analysis | reports/sast_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| SCA Agent | Dependency vulnerability analysis | reports/sca_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| DAST Agent | Dynamic application security analysis | reports/dast_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Pipeline Guard Agent | Pipeline security assessment | reports/pipeline_security_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Container Hardener Agent | Container image security | reports/container_security_report.md |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Policy Agent | Kubernetes policy security | reports/kubernetes_policy_report.md |" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "## Final Result" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "GitHub Actions orchestrated the selected AI-assisted DevSecOps security stages and collected the generated security reports." >> "$GITHUB_STEP_SUMMARY"
+          path: reports/

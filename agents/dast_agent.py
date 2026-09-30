@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -41,24 +40,15 @@ def load_json_report(path: Path) -> dict[str, Any]:
 
 
 def extract_alerts(report: dict[str, Any]) -> list[dict[str, Any]]:
-    """
-    Extract alerts from common OWASP ZAP JSON formats.
-
-    Supports:
-    1. Full report:
-       {"site": [{"alerts": [...]}]}
-
-    2. Alerts API:
-       {"alerts": [...]}
-    """
+    """Extract alerts from common OWASP ZAP JSON formats."""
 
     extracted_alerts: list[dict[str, Any]] = []
 
-    # Format produced by /JSON/core/view/alerts/
+    # ZAP alerts API format
     if isinstance(report.get("alerts"), list):
         extracted_alerts.extend(report["alerts"])
 
-    # Format produced by the full JSON report
+    # Full ZAP JSON report format
     sites = report.get("site", [])
 
     if isinstance(sites, dict):
@@ -81,7 +71,7 @@ def extract_alerts(report: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def normalize_alert(alert: dict[str, Any]) -> dict[str, str]:
-    """Select only useful fields before sending findings to the LLM."""
+    """Select useful fields before sending findings to Ollama."""
 
     return {
         "name": str(
@@ -135,9 +125,7 @@ def normalize_alert(alert: dict[str, Any]) -> dict[str, str]:
 def remove_duplicates(
     alerts: list[dict[str, Any]]
 ) -> list[dict[str, str]]:
-    """
-    Remove repeated findings using the finding name, URL and parameter.
-    """
+    """Remove repeated findings."""
 
     unique_alerts: list[dict[str, str]] = []
     seen: set[tuple[str, str, str]] = set()
@@ -159,7 +147,7 @@ def remove_duplicates(
 
 
 def format_findings(alerts: list[dict[str, str]]) -> str:
-    """Convert the findings into compact text for Ollama."""
+    """Convert findings into compact text for Ollama."""
 
     sections: list[str] = []
 
@@ -211,6 +199,7 @@ def generate_dast_report() -> None:
         )
 
     prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
+
     final_prompt = prompt_template.replace(
         "{findings}",
         findings_text,
@@ -218,15 +207,8 @@ def generate_dast_report() -> None:
 
     print("Initializing Ollama LLM...")
 
-    # llm = ChatOllama(
-    #     model="llama3.1:8b",
-    #     temperature=0.1,
-    # )
-    #         model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
-
-    model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
     llm = ChatOllama(
-         model=model_name,
+        model="llama3.1:8b",
         temperature=0.1,
     )
 
@@ -251,7 +233,7 @@ def generate_dast_report() -> None:
 """
 
     OUTPUT_PATH.write_text(
-        report_header + response.content,
+        report_header + str(response.content),
         encoding="utf-8",
     )
 
