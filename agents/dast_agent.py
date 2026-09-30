@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -217,8 +218,15 @@ def generate_dast_report() -> None:
 
     print("Initializing Ollama LLM...")
 
+    # llm = ChatOllama(
+    #     model="llama3.1:8b",
+    #     temperature=0.1,
+    # )
+    #         model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
+
+    model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
     llm = ChatOllama(
-        model="llama3.1:8b",
+         model=model_name,
         temperature=0.1,
     )
 
