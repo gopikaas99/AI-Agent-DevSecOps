@@ -179,6 +179,24 @@ jobs:
       # Upload Individual Reports
       # --------------------------------------------------
 
+      - name: Upload Threat Modeler report
+        uses: actions/upload-artifact@v4
+        with:
+          name: threat-modeler-report
+          path: reports/threat_report.md
+
+      - name: Upload SAST Agent report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-agent-report
+          path: reports/sast_report.md
+
+      - name: Upload SCA Agent report
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-agent-report
+          path: reports/sca_report.md
+
       - name: Upload DAST Agent report
         uses: actions/upload-artifact@v4
         with:
