@@ -1,6 +1,10 @@
 name: AI Agent Orchestration
 
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
 
 jobs:
