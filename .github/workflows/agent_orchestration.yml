@@ -530,4 +530,3 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
           echo "GitHub Actions orchestrated the selected AI-assisted DevSecOps security stages and collected the generated security reports." >> "$GITHUB_STEP_SUMMARY"
-          A
